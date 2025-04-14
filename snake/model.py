@@ -1,7 +1,5 @@
 import os
-os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
 import torch
-torch.device("cpu")
 import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
