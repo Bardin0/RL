@@ -8,6 +8,7 @@ import tcod
 import entity_factories
 from game_map import GameMap
 import tile_types
+from components.fighter import Fighter
 
 
 if TYPE_CHECKING:
@@ -26,10 +27,7 @@ max_monsters_by_floor = [
 ]
 
 item_chances: Dict[int, List[Tuple[Entity, int]]] = {
-    0: [(entity_factories.health_potion, 35)],
-    2: [(entity_factories.confusion_scroll, 10)],
-    4: [(entity_factories.lightning_scroll, 25), (entity_factories.sword, 5)],
-    6: [(entity_factories.fireball_scroll, 25), (entity_factories.chain_mail, 15)],
+    0: [(entity_factories.health_potion, 35), (entity_factories.coin, 50)],
 }
 
 enemy_chances: Dict[int, List[Tuple[Entity, int]]] = {

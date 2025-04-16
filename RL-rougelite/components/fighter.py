@@ -32,25 +32,11 @@ class Fighter(BaseComponent):
 
     @property
     def defense(self) -> int:
-        return self.base_defense + self.defense_bonus
+        return self.base_defense
 
     @property
     def power(self) -> int:
-        return self.base_power + self.power_bonus
-
-    @property
-    def defense_bonus(self) -> int:
-        if self.parent.equipment:
-            return self.parent.equipment.defense_bonus
-        else:
-            return 0
-
-    @property
-    def power_bonus(self) -> int:
-        if self.parent.equipment:
-            return self.parent.equipment.power_bonus
-        else:
-            return 0
+        return self.base_power
 
     def die(self) -> None:
         if self.engine.player is self.parent:

@@ -5,11 +5,6 @@ import exceptions
 
 from typing import Optional, Tuple, TYPE_CHECKING
 
-import soundfile
-import tcod.sdl.audio
-
-from audio import play_audio
-
 if TYPE_CHECKING:
     from engine import Engine
     from entity import Actor, Entity, Item
@@ -47,13 +42,10 @@ class PickupAction(Action):
 
         for item in self.engine.game_map.items:
             if actor_location_x == item.x and actor_location_y == item.y:
-
-                self.engine.message_log.add_message(f"You picked up the {item.name}! +10 pts.")
+                if item.consumable:
+                    item.consumable.activate(item.consumable.get_action(self.engine.player))
                 self.engine.game_map.entities.remove(item)
-
                 return
-
-        raise exceptions.Impossible("There is nothing here to pick up.")
 
 class ItemAction(Action):
     def __init__(
@@ -74,23 +66,6 @@ class ItemAction(Action):
         """Invoke the items ability, this action will be given to provide context."""
         if self.item.consumable:
             self.item.consumable.activate(self)
-    
-class DropItem(ItemAction):
-    def perform(self) -> None:
-        if self.entity.equipment.item_is_equipped(self.item):
-            self.entity.equipment.toggle_equip(self.item)
-            
-        self.entity.inventory.drop(self.item)
-
-class EquipAction(Action):
-    def __init__(self, entity: Actor, item: Item):
-        super().__init__(entity)
-
-        self.item = item
-
-    def perform(self) -> None:
-        self.entity.equipment.toggle_equip(self.item)
-        play_audio("sound_effects/equip.mp3")
 
 class WaitAction(Action):
     def perform(self) -> None:
@@ -102,12 +77,8 @@ class TakeStairsAction(Action):
         Take the stairs, if any exist at the entity's location.
         """
         if (self.entity.x, self.entity.y) == self.engine.game_map.downstairs_location:
+            self.engine.update_stats()
             self.engine.game_world.generate_floor()
-            self.engine.message_log.add_message(
-                "You descend the staircase.", color.descend
-            )
-        else:
-            raise exceptions.Impossible("There are no stairs here.")
 
 class ActionWithDirection(Action):
     def __init__(self, entity: Actor, dx: int, dy: int):
@@ -142,6 +113,8 @@ class MeleeAction(ActionWithDirection):
             raise exceptions.Impossible("Nothing to attack.")  # No entity to attack.
 
         damage = self.entity.fighter.power - target.fighter.defense
+        if damage < 0:
+            damage = 1
 
         attack_desc = f"{self.entity.name.capitalize()} attacks {target.name}"
         if self.entity is self.engine.player:
@@ -158,8 +131,6 @@ class MeleeAction(ActionWithDirection):
             self.engine.message_log.add_message(
                 f"{attack_desc} but does no damage.", attack_color
             )
-        if target is not self.engine.player:
-            play_audio(self.engine.player.sound)
 
 class MovementAction(ActionWithDirection):
     def perform(self) -> None:
@@ -173,6 +144,12 @@ class MovementAction(ActionWithDirection):
             raise exceptions.Impossible("That way is blocked")  # Destination is blocked by an entity.
 
         self.entity.move(self.dx, self.dy)
+
+        action = PickupAction(self.engine.player)
+        action.perform()
+
+        action = TakeStairsAction(self.engine.player)
+        action.perform()
 
 class BumpAction(ActionWithDirection):
     def perform(self) -> None:

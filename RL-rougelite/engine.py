@@ -1,16 +1,16 @@
 from __future__ import annotations
 
-import lzma
-import pickle
 from typing import TYPE_CHECKING
 
 from tcod.console import Console
 from tcod.map import compute_fov
 
-import exceptions
-
 from message_log import MessageLog
 import render_function
+from components.fighter import Fighter
+import entity_factories
+from components.level import Level
+import math
 
 if TYPE_CHECKING:
     from entity import Actor
@@ -30,14 +30,8 @@ class Engine:
             if entity.ai:
                 try:
                     entity.ai.perform()
-                except exceptions.Impossible():
-                    pass # Ignore impossible action exceptions from AI.
-    
-    def save_as(self, filename: str) -> None:
-        """Save this Engine instance as a compressed file."""
-        save_data = lzma.compress(pickle.dumps(self))
-        with open(filename, "wb") as f:
-            f.write(save_data)
+                except Exception:
+                    pass
 
     def update_fov(self) -> None:
         """Recompute the visible area based on the players point of view."""
@@ -70,6 +64,22 @@ class Engine:
         render_function.render_names_at_mouse_location(
             console=console, x=21, y=44, engine=self
         )
+
+    def update_stats(self):
+        entity_factories.orc.fighter = Fighter(
+                                        hp=8+(self.game_world.current_floor), 
+                                        base_defense= 0+(self.game_world.current_floor//2), 
+                                        base_power=1+(self.game_world.current_floor//2))
+        entity_factories.orc.level = Level(xp_given=(math.ceil(35+(self.game_world.current_floor * 1.2))))
+        entity_factories.orc.fighter.parent = entity_factories.orc
+
+        if self.game_world.current_floor > 3:
+            entity_factories.troll.fighter = Fighter(
+                                        hp=16+(self.game_world.current_floor), 
+                                        base_defense= 1+(self.game_world.current_floor//2), 
+                                        base_power=4+(self.game_world.current_floor//2))
+            entity_factories.troll.level = Level(xp_given=(math.ceil(100+(self.game_world.current_floor * 1.2))))
+            entity_factories.troll.fighter.parent = entity_factories.troll
 
         
 
